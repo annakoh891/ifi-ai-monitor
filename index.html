@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IFI AI Monitor — 국제금융기구 AI 동향</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ── TOP NAV ── -->
+  <header class="topnav">
+    <div class="nav-inner">
+      <div class="brand">
+        <span class="brand-icon">◈</span>
+        <span class="brand-name">IFI <span class="brand-accent">AI</span> Monitor</span>
+      </div>
+      <nav class="nav-links">
+        <a href="#" class="nav-link active" data-view="all">전체</a>
+        <a href="#" class="nav-link" data-view="tc">기술협력(TC)</a>
+        <a href="#" class="nav-link" data-view="project">프로젝트</a>
+        <a href="#" class="nav-link" data-view="loan">대출(Loan)</a>
+      </nav>
+      <div class="nav-right">
+        <div class="update-badge">
+          <span class="pulse-dot"></span>
+          <span id="lastUpdated">업데이트 중...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── HERO ── -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <h1>국제금융기구 <span class="accent">AI 사업</span> 현황</h1>
+        <p class="hero-sub">World Bank, ADB, IDB, AfDB, AIIB, EBRD 등 주요 IFI의 AI 관련 기술협력(TC), 프로젝트, 대출 정보를 매일 업데이트합니다.</p>
+      </div>
+      <div class="hero-stats" id="heroStats">
+        <div class="stat-card">
+          <span class="stat-num" id="statTotal">—</span>
+          <span class="stat-label">전체 사업</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="statTC">—</span>
+          <span class="stat-label">기술협력(TC)</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="statProject">—</span>
+          <span class="stat-label">프로젝트</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num" id="statLoan">—</span>
+          <span class="stat-label">대출(Loan)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="main-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <!-- Search -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">검색</label>
+        <div class="search-wrap">
+          <input type="text" id="searchInput" class="search-input" placeholder="사업명, 국가, 키워드..." />
+          <span class="search-icon">⌕</span>
+        </div>
+      </div>
+
+      <!-- Institution Filter -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">기관 필터</label>
+        <div class="filter-group" id="institutionFilters">
+          <label class="filter-chip active">
+            <input type="checkbox" value="all" checked /> 전체
+          </label>
+        </div>
+      </div>
+
+      <!-- Region Filter -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">지역 필터</label>
+        <div class="filter-group" id="regionFilters">
+          <label class="filter-chip active">
+            <input type="checkbox" value="all" checked /> 전체
+          </label>
+        </div>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">상태</label>
+        <div class="filter-group" id="statusFilters">
+          <label class="filter-chip active">
+            <input type="checkbox" value="all" checked /> 전체
+          </label>
+          <label class="filter-chip">
+            <input type="checkbox" value="active" /> 진행중
+          </label>
+          <label class="filter-chip">
+            <input type="checkbox" value="pipeline" /> 파이프라인
+          </label>
+          <label class="filter-chip">
+            <input type="checkbox" value="completed" /> 완료
+          </label>
+        </div>
+      </div>
+
+      <!-- Sort -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">정렬</label>
+        <select id="sortSelect" class="sort-select">
+          <option value="date-desc">최신순</option>
+          <option value="date-asc">오래된순</option>
+          <option value="amount-desc">금액 높은순</option>
+          <option value="amount-asc">금액 낮은순</option>
+          <option value="name-asc">이름 오름차순</option>
+        </select>
+      </div>
+
+      <!-- Reset -->
+      <button id="resetFilters" class="reset-btn">필터 초기화</button>
+    </aside>
+
+    <!-- FEED -->
+    <section class="feed">
+      <div class="feed-header">
+        <span id="resultCount" class="result-count"></span>
+        <div class="view-toggle">
+          <button class="toggle-btn active" id="gridViewBtn" title="그리드">⊞</button>
+          <button class="toggle-btn" id="listViewBtn" title="리스트">☰</button>
+        </div>
+      </div>
+
+      <div id="cardGrid" class="card-grid"></div>
+      <div id="noResults" class="no-results hidden">
+        <span>🔍</span>
+        <p>검색 결과가 없습니다.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── MODAL ── -->
+  <div id="modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-note">본 사이트는 주요 국제금융기구(IFI)의 공개 데이터를 바탕으로 AI 관련 사업 정보를 제공합니다. 매일 오전 9시(KST) 업데이트.</p>
+      <p class="footer-copy">© 2026 IFI AI Monitor</p>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
