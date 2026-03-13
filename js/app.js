@@ -20,8 +20,9 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
 
-  // changelog-specific refs (set after DOMContentLoaded)
-  let clColumns, changelogView, mainLayout, updateStrip;
+  // changelog & trend refs (set after DOMContentLoaded)
+  let clColumns, changelogView, mainLayout, updateStrip, trendView;
+  let chartInstances = {};
 
   const cardGrid      = $("#cardGrid");
   const noResults     = $("#noResults");
@@ -40,6 +41,7 @@
   function init() {
     clColumns      = $("#clColumns");
     changelogView  = $("#changelogView");
+    trendView      = $("#trendView");
     mainLayout     = $(".main-layout");
     updateStrip    = $("#updateStrip");
 
@@ -164,9 +166,14 @@
         link.classList.add("active");
         state.view = link.dataset.view;
         if (state.view === "changelog") {
+          deactivateTrend();
           activateChangelog();
+        } else if (state.view === "trend") {
+          deactivateChangelog();
+          activateTrend();
         } else {
           deactivateChangelog();
+          deactivateTrend();
           renderCards();
         }
       });
@@ -174,19 +181,35 @@
   }
 
   function activateChangelog() {
-    // 네비 표시 업데이트
     $$(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.view === "changelog"));
     state.view = "changelog";
     mainLayout.classList.add("hidden");
+    trendView.classList.add("hidden");
     changelogView.classList.remove("hidden");
     updateStrip.style.display = "none";
     renderChangelog();
   }
-
   function deactivateChangelog() {
     mainLayout.classList.remove("hidden");
     changelogView.classList.add("hidden");
     updateStrip.style.display = "";
+  }
+
+  function activateTrend() {
+    $$(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.view === "trend"));
+    state.view = "trend";
+    mainLayout.classList.add("hidden");
+    changelogView.classList.add("hidden");
+    trendView.classList.remove("hidden");
+    updateStrip.style.display = "none";
+    renderTrend();
+  }
+  function deactivateTrend() {
+    trendView.classList.add("hidden");
+    if (state.view !== "changelog") {
+      mainLayout.classList.remove("hidden");
+      updateStrip.style.display = "";
+    }
   }
 
   // ── Status Filter Listeners ───────────────
@@ -245,6 +268,7 @@
       searchInput.value = "";
       sortSelect.value = "date-desc";
       deactivateChangelog();
+      deactivateTrend();
       $$(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.view === "all"));
       // Reset all checkboxes
       ["#institutionFilters", "#regionFilters", "#statusFilters"].forEach(sel => {
@@ -513,6 +537,231 @@
     const futureItems = item.timeline.filter(x => !x.done && new Date(x.date) > now);
     if (futureItems.length === 0) return false;
     return t.date === futureItems[0].date;
+  }
+
+  // ── Trend / Chart View ────────────────────
+  const CHART_COLORS = {
+    tc:      "#2f81f7",
+    project: "#3fb950",
+    loan:    "#a855f7",
+    pipeline:"#f59e0b",
+    active:  "#3fb950",
+    completed:"#64748b",
+  };
+  const PALETTE = [
+    "#2f81f7","#3fb950","#a855f7","#f59e0b","#ef4444",
+    "#06b6d4","#84cc16","#ec4899","#f97316","#8b5cf6",
+    "#10b981","#6366f1"
+  ];
+
+  function destroyChart(id) {
+    if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+  }
+
+  function chartDefaults() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+      scales: {}
+    };
+  }
+
+  function renderTrend() {
+    // ── KPI 계산
+    const totalAmt = IFI_DATA.reduce((s, d) => s + (d.amount || 0), 0);
+    const activeCount = IFI_DATA.filter(d => d.status === "active").length;
+    const pipeCount   = IFI_DATA.filter(d => d.status === "pipeline").length;
+    const instCount   = new Set(IFI_DATA.map(d => d.institutionShort)).size;
+
+    $("#tvTotalAmt").textContent = `USD ${totalAmt.toLocaleString()} M`;
+
+    const kpiData = [
+      { label: "총 투자금액",   value: `${totalAmt.toLocaleString()}M`, sub: "USD",       cls: "accent-blue" },
+      { label: "진행중 사업",   value: activeCount,                      sub: `전체 ${IFI_DATA.length}건 중`, cls: "accent-green" },
+      { label: "파이프라인",    value: pipeCount,                        sub: "승인 대기",   cls: "accent-amber" },
+      { label: "참여 기관 수",  value: instCount,                        sub: "개 IFI",     cls: "accent-purple" },
+    ];
+    $("#tvKpiRow").innerHTML = kpiData.map(k => `
+      <div class="tv-kpi ${k.cls}">
+        <span class="tv-kpi-label">${k.label}</span>
+        <span class="tv-kpi-value">${k.value}</span>
+        <span class="tv-kpi-sub">${k.sub}</span>
+      </div>`).join("");
+
+    // ── 공통 Chart.js 옵션
+    const gridColor  = "rgba(255,255,255,0.06)";
+    const tickColor  = "#64748b";
+    const baseScales = {
+      x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } },
+      y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } },
+    };
+
+    // ── 차트 1: 기관별 투자금액 (가로 막대)
+    destroyChart("chartByInst");
+    const instMap = {};
+    IFI_DATA.forEach(d => {
+      instMap[d.institutionShort] = (instMap[d.institutionShort] || 0) + (d.amount || 0);
+    });
+    const instEntries = Object.entries(instMap).sort((a, b) => b[1] - a[1]);
+    chartInstances["chartByInst"] = new Chart($("#chartByInst"), {
+      type: "bar",
+      data: {
+        labels: instEntries.map(e => e[0]),
+        datasets: [{
+          data: instEntries.map(e => e[1]),
+          backgroundColor: instEntries.map((_, i) => PALETTE[i % PALETTE.length] + "cc"),
+          borderColor:     instEntries.map((_, i) => PALETTE[i % PALETTE.length]),
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        ...chartDefaults(),
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` USD ${ctx.parsed.y.toLocaleString()} M` } }
+        },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, beginAtZero: true }
+        }
+      }
+    });
+
+    // ── 차트 2: 유형별 사업 수 (도넛)
+    destroyChart("chartByType");
+    const typeMap = { tc: 0, project: 0, loan: 0 };
+    IFI_DATA.forEach(d => { if (typeMap[d.type] !== undefined) typeMap[d.type]++; });
+    const typeLabels = ["기술협력(TC)", "프로젝트", "대출(Loan)"];
+    const typeColors = [CHART_COLORS.tc, CHART_COLORS.project, CHART_COLORS.loan];
+    chartInstances["chartByType"] = new Chart($("#chartByType"), {
+      type: "doughnut",
+      data: {
+        labels: typeLabels,
+        datasets: [{
+          data: [typeMap.tc, typeMap.project, typeMap.loan],
+          backgroundColor: typeColors.map(c => c + "cc"),
+          borderColor: typeColors,
+          borderWidth: 2,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        ...chartDefaults(),
+        cutout: "68%",
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}건` } }
+        }
+      }
+    });
+    // 커스텀 범례
+    $("#chartByTypeLegend").innerHTML = typeLabels.map((l, i) => `
+      <div class="tv-legend-item">
+        <div class="tv-legend-dot" style="background:${typeColors[i]}"></div>
+        <span>${l} (${[typeMap.tc, typeMap.project, typeMap.loan][i]})</span>
+      </div>`).join("");
+
+    // ── 차트 3: 지역별 투자금액
+    destroyChart("chartByRegion");
+    const regionMap = {};
+    IFI_DATA.forEach(d => {
+      regionMap[d.region] = (regionMap[d.region] || 0) + (d.amount || 0);
+    });
+    const regionEntries = Object.entries(regionMap).sort((a, b) => b[1] - a[1]).slice(0, 9);
+    chartInstances["chartByRegion"] = new Chart($("#chartByRegion"), {
+      type: "bar",
+      data: {
+        labels: regionEntries.map(e => e[0]),
+        datasets: [{
+          data: regionEntries.map(e => e[1]),
+          backgroundColor: regionEntries.map((_, i) => PALETTE[(i + 3) % PALETTE.length] + "bb"),
+          borderColor:     regionEntries.map((_, i) => PALETTE[(i + 3) % PALETTE.length]),
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        ...chartDefaults(),
+        indexAxis: "y",
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` USD ${ctx.parsed.x.toLocaleString()} M` } }
+        },
+        scales: {
+          x: { ...baseScales.x, beginAtZero: true },
+          y: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } } }
+        }
+      }
+    });
+
+    // ── 차트 4: 기관별 사업 유형 구성 (스택 바)
+    destroyChart("chartTypeStack");
+    const instList = [...new Set(IFI_DATA.map(d => d.institutionShort))].sort();
+    const stackData = {
+      tc:      instList.map(inst => IFI_DATA.filter(d => d.institutionShort === inst && d.type === "tc").length),
+      project: instList.map(inst => IFI_DATA.filter(d => d.institutionShort === inst && d.type === "project").length),
+      loan:    instList.map(inst => IFI_DATA.filter(d => d.institutionShort === inst && d.type === "loan").length),
+    };
+    chartInstances["chartTypeStack"] = new Chart($("#chartTypeStack"), {
+      type: "bar",
+      data: {
+        labels: instList,
+        datasets: [
+          { label: "TC",    data: stackData.tc,      backgroundColor: CHART_COLORS.tc      + "bb", borderRadius: 3 },
+          { label: "프로젝트", data: stackData.project, backgroundColor: CHART_COLORS.project + "bb", borderRadius: 3 },
+          { label: "대출",  data: stackData.loan,    backgroundColor: CHART_COLORS.loan    + "bb", borderRadius: 3 },
+        ]
+      },
+      options: {
+        ...chartDefaults(),
+        plugins: {
+          legend: {
+            display: true,
+            position: "bottom",
+            labels: { color: tickColor, font: { size: 11 }, boxWidth: 12, padding: 12 }
+          }
+        },
+        scales: {
+          ...baseScales,
+          x: { ...baseScales.x, stacked: true },
+          y: { ...baseScales.y, stacked: true, beginAtZero: true, ticks: { ...baseScales.y.ticks, stepSize: 1 } }
+        }
+      }
+    });
+
+    // ── 차트 5: AI 세부분야 Top 10
+    destroyChart("chartAiTopics");
+    const topicMap = {};
+    IFI_DATA.forEach(d => {
+      (d.aiSubtopics || []).forEach(t => { topicMap[t] = (topicMap[t] || 0) + 1; });
+    });
+    const topicEntries = Object.entries(topicMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    chartInstances["chartAiTopics"] = new Chart($("#chartAiTopics"), {
+      type: "bar",
+      data: {
+        labels: topicEntries.map(e => e[0]),
+        datasets: [{
+          data: topicEntries.map(e => e[1]),
+          backgroundColor: topicEntries.map((_, i) => PALETTE[i % PALETTE.length] + "bb"),
+          borderColor:     topicEntries.map((_, i) => PALETTE[i % PALETTE.length]),
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        ...chartDefaults(),
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y}건 사업에서 언급` } }
+        },
+        scales: {
+          ...baseScales,
+          y: { ...baseScales.y, beginAtZero: true, ticks: { ...baseScales.y.ticks, stepSize: 1 } }
+        }
+      }
+    });
   }
 
   // ── Update Strip ──────────────────────────
