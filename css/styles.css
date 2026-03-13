@@ -606,3 +606,318 @@ a:hover { text-decoration: underline; }
   .card-grid { grid-template-columns: 1fr; }
   .modal-box { padding: 20px; }
 }
+
+/* ═══════════════════════════════════════════
+   CHANGELOG / DAILY DIFF DASHBOARD
+   ═══════════════════════════════════════════ */
+
+/* ── Nav diff button ── */
+.nav-link-diff {
+  position: relative;
+  color: var(--accent) !important;
+  font-weight: 600;
+}
+.nav-link-diff::after {
+  content: '';
+  position: absolute;
+  top: -4px; right: -6px;
+  width: 7px; height: 7px;
+  background: #3fb950;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  animation: pulse-ring 2s infinite;
+}
+
+/* ── Update Strip ── */
+.update-strip {
+  background: linear-gradient(90deg, rgba(47,129,247,0.08) 0%, rgba(63,185,80,0.06) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 24px;
+  font-size: 13px;
+  color: var(--text2);
+}
+.update-strip-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.strip-today-label {
+  font-weight: 600;
+  color: #3fb950;
+  white-space: nowrap;
+}
+.strip-yesterday-label {
+  font-weight: 600;
+  color: var(--text3);
+  white-space: nowrap;
+}
+.strip-divider {
+  color: var(--border);
+  padding: 0 4px;
+}
+.strip-detail-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 3px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+  white-space: nowrap;
+}
+.strip-detail-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Changelog View ── */
+.changelog-view {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+.changelog-view.hidden { display: none; }
+
+.cl-header {
+  margin-bottom: 28px;
+}
+.cl-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text1);
+  margin-bottom: 6px;
+}
+.cl-subtitle {
+  font-size: 14px;
+  color: var(--text3);
+}
+
+/* ── Two-column layout ── */
+.cl-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .cl-columns { grid-template-columns: 1fr; }
+}
+
+/* ── Column card ── */
+.cl-col {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.cl-col.today {
+  border-color: rgba(63,185,80,0.45);
+  box-shadow: 0 0 0 1px rgba(63,185,80,0.15), 0 4px 24px rgba(63,185,80,0.07);
+}
+.cl-col.yesterday {
+  border-color: var(--border);
+  opacity: 0.92;
+}
+
+.cl-col-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cl-col.today .cl-col-head { background: rgba(63,185,80,0.07); }
+.cl-col.yesterday .cl-col-head { background: rgba(255,255,255,0.02); }
+
+.cl-day-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.today .cl-day-dot { background: #3fb950; box-shadow: 0 0 6px rgba(63,185,80,0.6); }
+.yesterday .cl-day-dot { background: var(--text3); }
+
+.cl-day-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text1);
+}
+.cl-day-date {
+  font-size: 12px;
+  color: var(--text3);
+  margin-left: auto;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Summary chips ── */
+.cl-summary-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.cl-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.cl-chip.added   { border-color: rgba(47,129,247,0.4); color: var(--accent); }
+.cl-chip.changed { border-color: rgba(234,179,8,0.4);  color: #eab308; }
+.cl-chip.amount  { border-color: rgba(168,85,247,0.4); color: #a855f7; }
+.cl-chip.desc    { border-color: rgba(100,116,139,0.4);color: var(--text3); }
+.cl-chip-num {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ── Sections inside column ── */
+.cl-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.cl-section:last-child { border-bottom: none; }
+.cl-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cl-empty {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+}
+
+/* ── Diff item cards ── */
+.diff-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color .2s, transform .15s, box-shadow .2s;
+  position: relative;
+}
+.diff-item:last-child { margin-bottom: 0; }
+.diff-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(47,129,247,0.12);
+}
+
+.diff-item-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.diff-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text1);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.diff-item-meta {
+  font-size: 12px;
+  color: var(--text3);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.diff-item-amount {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  margin-left: auto;
+}
+
+/* status change pill */
+.diff-status-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.diff-status-from {
+  background: rgba(100,116,139,0.15);
+  color: var(--text3);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.diff-status-arrow { color: var(--text3); font-size: 10px; }
+.diff-status-to {
+  background: rgba(63,185,80,0.15);
+  color: #3fb950;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+/* amount change row */
+.diff-amount-change {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.diff-amt-from {
+  color: var(--text3);
+  text-decoration: line-through;
+}
+.diff-amt-arrow { color: #a855f7; font-size: 10px; }
+.diff-amt-to { color: #a855f7; font-weight: 700; }
+.diff-amt-badge {
+  background: rgba(168,85,247,0.12);
+  color: #a855f7;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-family: inherit;
+}
+
+/* desc update */
+.diff-desc-change {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Column note text ── */
+.cl-col-note {
+  padding: 14px 20px;
+  font-size: 12px;
+  color: var(--text3);
+  background: rgba(255,255,255,0.02);
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
+}

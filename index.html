@@ -22,6 +22,7 @@
         <a href="#" class="nav-link" data-view="tc">기술협력(TC)</a>
         <a href="#" class="nav-link" data-view="project">프로젝트</a>
         <a href="#" class="nav-link" data-view="loan">대출(Loan)</a>
+        <a href="#" class="nav-link nav-link-diff" data-view="changelog">📊 변경 내역</a>
       </nav>
       <div class="nav-right">
         <div class="update-badge">
@@ -57,6 +58,29 @@
           <span class="stat-label">대출(Loan)</span>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ── UPDATE STRIP ── -->
+  <div class="update-strip" id="updateStrip">
+    <div class="update-strip-inner">
+      <span class="strip-today-label">🟢 오늘</span>
+      <span id="stripTodaySummary"></span>
+      <span class="strip-divider">|</span>
+      <span class="strip-yesterday-label">⚪ 어제</span>
+      <span id="stripYesterdaySummary"></span>
+      <button class="strip-detail-btn" id="stripDetailBtn">자세히 보기 →</button>
+    </div>
+  </div>
+
+  <!-- ── CHANGELOG VIEW ── -->
+  <section id="changelogView" class="changelog-view hidden">
+    <div class="cl-header">
+      <div class="cl-title">📊 일일 변경 현황</div>
+      <div class="cl-subtitle">IFI AI 사업 데이터베이스의 어제 대비 오늘 변경사항</div>
+    </div>
+    <div class="cl-columns" id="clColumns">
+      <!-- JS로 렌더링 -->
     </div>
   </section>
 

@@ -976,6 +976,128 @@ const IFI_DATA = [
     addedDate: "2026-03-12"
   },
 
+  // ╔══════════════════════════════╗
+  // ║  TODAY (2026-03-13) — NEW    ║
+  // ╚══════════════════════════════╝
+  {
+    id: "EBRD-002",
+    institution: "European Bank for Reconstruction and Development",
+    institutionShort: "EBRD",
+    type: "loan",
+    status: "pipeline",
+    isNew: true,
+    title: "Green Finance AI Platform — Central & Eastern Europe",
+    country: "폴란드, 체코, 헝가리, 루마니아",
+    region: "유럽",
+    amount: 350,
+    currency: "USD",
+    unit: "M",
+    approvalDate: null,
+    closingDate: null,
+    sector: "녹색금융 / 기후",
+    aiSubtopics: ["ESG AI", "녹색채권 스코어링", "기후리스크 모델링", "탄소발자국 AI"],
+    description: "중동유럽 녹색금융 생태계 강화를 위한 AI 플랫폼 구축 대출. ESG 데이터 자동 수집·분석, AI 기반 녹색채권 인증 스코어링, 기업 탄소발자국 실시간 모니터링 시스템을 4개국에 구축. EU 택소노미 정렬 자동화 포함.",
+    borrower: "각국 개발은행·민간 금융기관",
+    objectives: [
+      "AI ESG 데이터 플랫폼 (4개국 연계)",
+      "녹색채권 AI 인증 스코어링 시스템",
+      "기업 탄소발자국 자동 모니터링",
+      "EU 택소노미 정렬 자동화 도구"
+    ],
+    timeline: [
+      { event: "사전 타당성 검토 완료", date: "2026-03-10", done: true },
+      { event: "이사회 상정 예정", date: "2026-09-01", done: false },
+      { event: "협약 서명 예정", date: "2026-12-01", done: false },
+      { event: "플랫폼 1차 오픈", date: "2027-06-30", done: false }
+    ],
+    url: "https://www.ebrd.com/work-with-us/projects.html",
+    tags: ["녹색금융", "ESG AI", "중동유럽", "탄소중립"],
+    addedDate: "2026-03-13"
+  },
+
+  {
+    id: "IMF-002",
+    institution: "International Monetary Fund",
+    institutionShort: "IMF",
+    type: "tc",
+    status: "active",
+    isNew: true,
+    title: "AI & CBDC Regulatory Framework Technical Assistance — Asia Pacific",
+    country: "태국, 말레이시아, 필리핀, 스리랑카",
+    region: "동남아시아",
+    amount: 8.5,
+    currency: "USD",
+    unit: "M",
+    approvalDate: "2026-03-01",
+    closingDate: "2028-02-28",
+    sector: "금융감독 / 디지털통화",
+    aiSubtopics: ["CBDC AI", "금융규제 AI", "머니런더링 탐지", "AI 감독체계"],
+    description: "중앙은행 디지털화폐(CBDC) 발행과 AI 기반 금융서비스 규제체계 수립을 위한 IMF 기술지원. AI 머니런더링 탐지 시스템 구축, CBDC 스마트계약 감사, 디지털자산 AI 리스크 분류 프레임워크 제공. 4개국 중앙은행 동시 지원.",
+    borrower: "태국·말레이시아·필리핀·스리랑카 중앙은행",
+    objectives: [
+      "CBDC 발행 AI 리스크 평가 프레임워크",
+      "AI 기반 AML/CFT 탐지 시스템 구축",
+      "디지털자산 AI 분류 및 규제 가이드라인",
+      "중앙은행 디지털 역량 강화 (400명)"
+    ],
+    timeline: [
+      { event: "TC 발효", date: "2026-03-01", done: true },
+      { event: "1차 전문가 파견 (태국·말레이시아)", date: "2026-04-15", done: false },
+      { event: "규제 프레임워크 초안 배포", date: "2026-10-31", done: false },
+      { event: "최종 완료", date: "2028-02-28", done: false }
+    ],
+    url: "https://www.imf.org/en/Topics/digital-finance",
+    tags: ["CBDC", "AI 금융감독", "디지털자산", "동남아시아"],
+    addedDate: "2026-03-13"
+  }
+
+];
+
+// ═══════════════════════════════════════════
+//  CHANGELOG — 일일 변경 내역
+// ═══════════════════════════════════════════
+
+const CHANGELOG = [
+  {
+    date: "2026-03-13",
+    dateLabel: "오늘",
+    summary: "EBRD·IMF 신규 2건 추가, ADB 농업 AI 프로젝트 파이프라인→진행중 전환",
+    added: ["EBRD-002", "IMF-002"],
+    statusChanged: [
+      {
+        id: "ADB-001",
+        fromStatus: "pipeline",
+        toStatus: "active",
+        fromLabel: "파이프라인",
+        toLabel: "진행중"
+      }
+    ],
+    amountChanged: [],
+    descUpdated: []
+  },
+  {
+    date: "2026-03-12",
+    dateLabel: "어제",
+    summary: "GCF 3건 신규 등록 (기후취약성 지도, NDC/MRV TC, 아프리카 그린수소 대출)",
+    added: ["GCF-001", "GCF-002", "GCF-003"],
+    statusChanged: [],
+    amountChanged: [
+      {
+        id: "WB-002",
+        fromAmount: 400,
+        toAmount: 450,
+        currency: "USD",
+        unit: "M",
+        label: "USD 400M → 450M (증액 확정)"
+      }
+    ],
+    descUpdated: [
+      {
+        id: "AIIB-001",
+        label: "AI 거버넌스 세부목표 항목 3건 업데이트"
+      }
+    ]
+  }
 ];
 
 // 기관 목록 (자동 생성)

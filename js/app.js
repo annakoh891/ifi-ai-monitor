@@ -20,6 +20,9 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => [...document.querySelectorAll(sel)];
 
+  // changelog-specific refs (set after DOMContentLoaded)
+  let clColumns, changelogView, mainLayout, updateStrip;
+
   const cardGrid      = $("#cardGrid");
   const noResults     = $("#noResults");
   const searchInput   = $("#searchInput");
@@ -35,6 +38,11 @@
 
   // ── Init ──────────────────────────────────
   function init() {
+    clColumns      = $("#clColumns");
+    changelogView  = $("#changelogView");
+    mainLayout     = $(".main-layout");
+    updateStrip    = $("#updateStrip");
+
     renderLastUpdated();
     renderStats();
     buildInstitutionFilters();
@@ -47,6 +55,12 @@
     attachResetListener();
     attachModalListeners();
     renderCards();
+    renderUpdateStrip();
+
+    // "자세히 보기" in strip → jump to changelog
+    $("#stripDetailBtn").addEventListener("click", () => {
+      activateChangelog();
+    });
   }
 
   // ── Last Updated ──────────────────────────
@@ -149,9 +163,30 @@
         $$(".nav-link").forEach(l => l.classList.remove("active"));
         link.classList.add("active");
         state.view = link.dataset.view;
-        renderCards();
+        if (state.view === "changelog") {
+          activateChangelog();
+        } else {
+          deactivateChangelog();
+          renderCards();
+        }
       });
     });
+  }
+
+  function activateChangelog() {
+    // 네비 표시 업데이트
+    $$(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.view === "changelog"));
+    state.view = "changelog";
+    mainLayout.classList.add("hidden");
+    changelogView.classList.remove("hidden");
+    updateStrip.style.display = "none";
+    renderChangelog();
+  }
+
+  function deactivateChangelog() {
+    mainLayout.classList.remove("hidden");
+    changelogView.classList.add("hidden");
+    updateStrip.style.display = "";
   }
 
   // ── Status Filter Listeners ───────────────
@@ -209,6 +244,7 @@
       state.sort = "date-desc";
       searchInput.value = "";
       sortSelect.value = "date-desc";
+      deactivateChangelog();
       $$(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.view === "all"));
       // Reset all checkboxes
       ["#institutionFilters", "#regionFilters", "#statusFilters"].forEach(sel => {
@@ -477,6 +513,177 @@
     const futureItems = item.timeline.filter(x => !x.done && new Date(x.date) > now);
     if (futureItems.length === 0) return false;
     return t.date === futureItems[0].date;
+  }
+
+  // ── Update Strip ──────────────────────────
+  function renderUpdateStrip() {
+    const today     = CHANGELOG[0]; // 오늘
+    const yesterday = CHANGELOG[1]; // 어제
+    if (!today || !yesterday) return;
+
+    $("#stripTodaySummary").textContent =
+      `신규 ${today.added.length}건` +
+      (today.statusChanged.length ? ` · 상태변경 ${today.statusChanged.length}건` : "") +
+      (today.amountChanged.length ? ` · 금액변경 ${today.amountChanged.length}건` : "");
+
+    $("#stripYesterdaySummary").textContent =
+      `신규 ${yesterday.added.length}건` +
+      (yesterday.statusChanged.length ? ` · 상태변경 ${yesterday.statusChanged.length}건` : "") +
+      (yesterday.amountChanged.length ? ` · 금액변경 ${yesterday.amountChanged.length}건` : "");
+  }
+
+  // ── Changelog Dashboard ────────────────────
+  function renderChangelog() {
+    clColumns.innerHTML = CHANGELOG.map((day, idx) =>
+      buildDiffColHTML(day, idx === 0 ? "today" : "yesterday")
+    ).join("");
+
+    // 클릭 이벤트 — 카드 클릭 시 모달 오픈
+    clColumns.querySelectorAll(".diff-item[data-id]").forEach(el => {
+      el.addEventListener("click", () => {
+        const item = IFI_DATA.find(d => d.id === el.dataset.id);
+        if (item) openModal(item);
+      });
+    });
+  }
+
+  function buildDiffColHTML(day, cls) {
+    const totalChanges = day.added.length + day.statusChanged.length +
+                         day.amountChanged.length + day.descUpdated.length;
+
+    // ── 요약 칩
+    const chips = [
+      day.added.length
+        ? `<span class="cl-chip added"><span class="cl-chip-num">${day.added.length}</span> 신규 추가</span>` : "",
+      day.statusChanged.length
+        ? `<span class="cl-chip changed"><span class="cl-chip-num">${day.statusChanged.length}</span> 상태변경</span>` : "",
+      day.amountChanged.length
+        ? `<span class="cl-chip amount"><span class="cl-chip-num">${day.amountChanged.length}</span> 금액변경</span>` : "",
+      day.descUpdated.length
+        ? `<span class="cl-chip desc"><span class="cl-chip-num">${day.descUpdated.length}</span> 내용수정</span>` : "",
+      totalChanges === 0
+        ? `<span class="cl-chip">변경 없음</span>` : ""
+    ].filter(Boolean).join("");
+
+    // ── 신규 추가 아이템
+    const addedHTML = day.added.length
+      ? day.added.map(id => {
+          const item = IFI_DATA.find(d => d.id === id);
+          if (!item) return "";
+          const typeName = { tc: "TC", project: "프로젝트", loan: "대출" }[item.type] || item.type;
+          const typeColor = { tc: "badge-tc", project: "badge-project", loan: "badge-loan" }[item.type];
+          const amt = item.amount
+            ? `${item.currency} ${item.amount.toLocaleString()} ${item.unit}`
+            : "금액 미정";
+          return `
+            <div class="diff-item" data-id="${item.id}">
+              <div class="diff-item-top">
+                <span class="badge ${typeColor}" style="font-size:10px;padding:2px 7px">${typeName}</span>
+                <span class="institution-tag" style="font-size:11px">${item.institutionShort}</span>
+              </div>
+              <div class="diff-item-title">${item.title}</div>
+              <div class="diff-item-meta">
+                <span>📍 ${item.region}</span>
+                <span>${item.sector}</span>
+                <span class="diff-item-amount">${amt}</span>
+              </div>
+            </div>`;
+        }).join("")
+      : `<p class="cl-empty">신규 추가 없음</p>`;
+
+    // ── 상태 변경
+    const statusHTML = day.statusChanged.length
+      ? day.statusChanged.map(ch => {
+          const item = IFI_DATA.find(d => d.id === ch.id);
+          if (!item) return "";
+          return `
+            <div class="diff-item" data-id="${item.id}">
+              <div class="diff-item-title">${item.title}</div>
+              <div class="diff-item-meta">
+                <span class="institution-tag" style="font-size:11px">${item.institutionShort}</span>
+                <span>📍 ${item.region}</span>
+              </div>
+              <div class="diff-status-change">
+                <span class="diff-status-from">${ch.fromLabel}</span>
+                <span class="diff-status-arrow">▶</span>
+                <span class="diff-status-to">${ch.toLabel}</span>
+              </div>
+            </div>`;
+        }).join("")
+      : `<p class="cl-empty">변경 없음</p>`;
+
+    // ── 금액 변경
+    const amountHTML = day.amountChanged.length
+      ? day.amountChanged.map(ch => {
+          const item = IFI_DATA.find(d => d.id === ch.id);
+          if (!item) return "";
+          const diff = ch.toAmount - ch.fromAmount;
+          const sign = diff > 0 ? "▲" : "▼";
+          return `
+            <div class="diff-item" data-id="${item.id}">
+              <div class="diff-item-title">${item.title}</div>
+              <div class="diff-item-meta">
+                <span class="institution-tag" style="font-size:11px">${item.institutionShort}</span>
+                <span>📍 ${item.region}</span>
+              </div>
+              <div class="diff-amount-change">
+                <span class="diff-amt-from">${ch.currency} ${ch.fromAmount.toLocaleString()}${ch.unit}</span>
+                <span class="diff-amt-arrow">▶</span>
+                <span class="diff-amt-to">${ch.currency} ${ch.toAmount.toLocaleString()}${ch.unit}</span>
+                <span class="diff-amt-badge">${sign} ${Math.abs(diff).toLocaleString()}${ch.unit}</span>
+              </div>
+            </div>`;
+        }).join("")
+      : `<p class="cl-empty">변경 없음</p>`;
+
+    // ── 내용 수정
+    const descHTML = day.descUpdated.length
+      ? day.descUpdated.map(ch => {
+          const item = IFI_DATA.find(d => d.id === ch.id);
+          if (!item) return "";
+          return `
+            <div class="diff-item" data-id="${item.id}">
+              <div class="diff-item-title">${item.title}</div>
+              <div class="diff-desc-change">✏️ ${ch.label}</div>
+            </div>`;
+        }).join("")
+      : "";
+
+    const dateFormatted = new Date(day.date).toLocaleDateString("ko-KR",
+      { month: "long", day: "numeric", weekday: "short" });
+
+    return `
+      <div class="cl-col ${cls}">
+        <div class="cl-col-head">
+          <div class="cl-day-dot"></div>
+          <div class="cl-day-label">${day.dateLabel}</div>
+          <div class="cl-day-date">${dateFormatted}</div>
+        </div>
+        <div class="cl-summary-row">${chips}</div>
+
+        <div class="cl-section">
+          <div class="cl-section-title">➕ 신규 추가</div>
+          ${addedHTML}
+        </div>
+
+        <div class="cl-section">
+          <div class="cl-section-title">🔄 상태 변경</div>
+          ${statusHTML}
+        </div>
+
+        <div class="cl-section">
+          <div class="cl-section-title">💰 금액 변경</div>
+          ${amountHTML}
+        </div>
+
+        ${day.descUpdated.length ? `
+        <div class="cl-section">
+          <div class="cl-section-title">✏️ 내용 수정</div>
+          ${descHTML}
+        </div>` : ""}
+
+        <div class="cl-col-note">📌 ${day.summary}</div>
+      </div>`;
   }
 
   // ── Keyboard nav ──────────────────────────
