@@ -176,6 +176,16 @@
         </div>
       </div>
 
+      <!-- Topic Filter -->
+      <div class="sidebar-section">
+        <label class="sidebar-label">분야 필터</label>
+        <div class="filter-group topic-filter-group" id="topicFilters">
+          <label class="filter-chip active">
+            <input type="checkbox" value="all" checked /> 전체
+          </label>
+        </div>
+      </div>
+
       <!-- Status Filter -->
       <div class="sidebar-section">
         <label class="sidebar-label">상태</label>
@@ -216,6 +226,7 @@
       <div class="feed-header">
         <span id="resultCount" class="result-count"></span>
         <div class="view-toggle">
+          <button class="toggle-btn" id="groupTopicBtn" title="분야별 묶기">⊟ 분야별</button>
           <button class="toggle-btn active" id="gridViewBtn" title="그리드">⊞</button>
           <button class="toggle-btn" id="listViewBtn" title="리스트">☰</button>
         </div>

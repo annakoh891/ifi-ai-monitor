@@ -7,14 +7,49 @@
 
   // ── State ──────────────────────────────────
   let state = {
-    view: "all",           // all | tc | project | loan
+    view: "all",           // all | tc | project | loan | trend | changelog
     search: "",
     institutions: new Set(["all"]),
     regions: new Set(["all"]),
     statuses: new Set(["all"]),
+    topics: new Set(["all"]),
     sort: "date-desc",
     layout: "grid",        // grid | list
+    groupByTopic: false,
   };
+
+  // ── Topic classification rules ─────────────
+  const TOPIC_RULES = [
+    { key: "기후/환경",    emoji: "🌱", color: "#3fb950", cls: "기후환경",
+      kw: ["기후","climate","환경","녹색","green","탄소","carbon","gcf","ndc","온실","수해","홍수","가뭄"] },
+    { key: "에너지",       emoji: "💡", color: "#f59e0b", cls: "에너지",
+      kw: ["에너지","energy","수소","hydrogen","태양","풍력","재생","발전","전력","그리드","grid"] },
+    { key: "교육",         emoji: "📚", color: "#2f81f7", cls: "교육",
+      kw: ["교육","education","학습","learning","스킬","skill","역량강화","훈련","training"] },
+    { key: "보건/의료",    emoji: "💊", color: "#ef4444", cls: "보건의료",
+      kw: ["보건","의료","health","medical","헬스","병원","진단","약","제약","바이오"] },
+    { key: "금융/핀테크",  emoji: "💰", color: "#eab308", cls: "금융핀테크",
+      kw: ["금융","finance","fintech","핀테크","cbdc","통화","은행","보험","대출","신용","esg","mrv","채권"] },
+    { key: "농업/식량",    emoji: "🌾", color: "#84cc16", cls: "농업식량",
+      kw: ["농업","agriculture","식량","food","작물","farm","수산","축산","식품"] },
+    { key: "사회보호",     emoji: "🛡️", color: "#a855f7", cls: "사회보호",
+      kw: ["사회보호","social protection","복지","welfare","공공안전","justice","사법","치안","보조금"] },
+    { key: "거버넌스/정책",emoji: "🏛️", color: "#94a3b8", cls: "거버넌스",
+      kw: ["거버넌스","governance","정책","policy","규제","regulatory","법","제도","ai 윤리","ethics","포용"] },
+    { key: "인프라/도시",  emoji: "🏗️", color: "#06b6d4", cls: "인프라도시",
+      kw: ["인프라","infrastructure","스마트시티","교통","transport","도시","city","통신","물류"] },
+    { key: "디지털/데이터",emoji: "💻", color: "#6366f1", cls: "디지털",
+      kw: ["디지털","digital","데이터","data","플랫폼","platform","클라우드","cloud","사이버","소프트웨어"] },
+  ];
+
+  function getTopics(item) {
+    const text = [
+      item.title, item.sector, item.description, item.country,
+      ...(item.tags || []), ...(item.aiSubtopics || [])
+    ].join(" ").toLowerCase();
+    const matched = TOPIC_RULES.filter(t => t.kw.some(kw => text.includes(kw)));
+    return matched.length ? matched.map(t => t.key) : ["기타"];
+  }
 
   // ── DOM refs ──────────────────────────────
   const $ = (sel) => document.querySelector(sel);
@@ -49,6 +84,7 @@
     renderStats();
     buildInstitutionFilters();
     buildRegionFilters();
+    buildTopicFilters();
     attachNavListeners();
     attachFilterListeners();
     attachSortListener();
@@ -56,6 +92,7 @@
     attachSearchListener();
     attachResetListener();
     attachModalListeners();
+    attachGroupToggleListener();
     renderCards();
     renderUpdateStrip();
 
@@ -111,6 +148,21 @@
     });
     container.querySelectorAll("input").forEach(cb => {
       cb.addEventListener("change", () => handleSetFilter("institutions", cb.value, cb.checked, container));
+    });
+  }
+
+  function buildTopicFilters() {
+    const container = $("#topicFilters");
+    container.innerHTML = `<label class="filter-chip active"><input type="checkbox" value="all" checked /> 전체</label>`;
+    TOPIC_RULES.forEach(t => {
+      const label = document.createElement("label");
+      label.className = `filter-chip topic-chip-${t.cls}`;
+      label.style.setProperty("--tc", t.color);
+      label.innerHTML = `<input type="checkbox" value="${t.key}" />${t.emoji} ${t.key}`;
+      container.appendChild(label);
+    });
+    container.querySelectorAll("input").forEach(cb => {
+      cb.addEventListener("change", () => handleSetFilter("topics", cb.value, cb.checked, container));
     });
   }
 
@@ -228,6 +280,16 @@
     });
   }
 
+  // ── Group Toggle ──────────────────────────
+  function attachGroupToggleListener() {
+    const btn = $("#groupTopicBtn");
+    btn.addEventListener("click", () => {
+      state.groupByTopic = !state.groupByTopic;
+      btn.classList.toggle("active", state.groupByTopic);
+      renderCards();
+    });
+  }
+
   // ── Layout ────────────────────────────────
   function attachLayoutListeners() {
     gridViewBtn.addEventListener("click", () => {
@@ -264,14 +326,17 @@
       state.institutions = new Set(["all"]);
       state.regions = new Set(["all"]);
       state.statuses = new Set(["all"]);
+      state.topics   = new Set(["all"]);
+      state.groupByTopic = false;
       state.sort = "date-desc";
       searchInput.value = "";
       sortSelect.value = "date-desc";
+      $("#groupTopicBtn").classList.remove("active");
       deactivateChangelog();
       deactivateTrend();
       $$(".nav-link").forEach(l => l.classList.toggle("active", l.dataset.view === "all"));
       // Reset all checkboxes
-      ["#institutionFilters", "#regionFilters", "#statusFilters"].forEach(sel => {
+      ["#institutionFilters", "#regionFilters", "#statusFilters", "#topicFilters"].forEach(sel => {
         const cont = $(sel);
         cont.querySelectorAll("input").forEach(cb => {
           cb.checked = cb.value === "all";
@@ -321,6 +386,14 @@
       data = data.filter(d => state.statuses.has(d.status));
     }
 
+    // Topic filter
+    if (!state.topics.has("all")) {
+      data = data.filter(d => {
+        const itemTopics = getTopics(d);
+        return [...state.topics].some(t => itemTopics.includes(t));
+      });
+    }
+
     // Search
     if (state.search) {
       const q = state.search;
@@ -363,9 +436,54 @@
     }
     noResults.classList.add("hidden");
 
-    cardGrid.innerHTML = data.map((item, i) => buildCardHTML(item, i)).join("");
+    if (state.groupByTopic) {
+      renderGroupedCards(data);
+    } else {
+      cardGrid.innerHTML = data.map((item, i) => buildCardHTML(item, i)).join("");
+      attachCardClickListeners();
+    }
+  }
 
-    // Attach click listeners
+  function renderGroupedCards(data) {
+    // 각 항목의 첫 번째 토픽으로 그룹핑
+    const groups = new Map(); // key: topic key, value: {rule, items[]}
+    data.forEach(item => {
+      const topics = getTopics(item);
+      const firstTopic = topics[0] || "기타";
+      const rule = TOPIC_RULES.find(t => t.key === firstTopic)
+                || { key: "기타", emoji: "📌", color: "#64748b", cls: "기타" };
+      if (!groups.has(firstTopic)) groups.set(firstTopic, { rule, items: [] });
+      groups.get(firstTopic).items.push(item);
+    });
+
+    // TOPIC_RULES 순서로 정렬 (기타는 마지막)
+    const ordered = [...groups.entries()].sort((a, b) => {
+      const ai = TOPIC_RULES.findIndex(t => t.key === a[0]);
+      const bi = TOPIC_RULES.findIndex(t => t.key === b[0]);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+
+    let html = "";
+    let cardIdx = 0;
+    ordered.forEach(([key, { rule, items }]) => {
+      const cardsHTML = items.map(item => buildCardHTML(item, cardIdx++, rule.color)).join("");
+      html += `
+        <div class="topic-group" data-topic="${key}">
+          <div class="topic-group-header" onclick="this.closest('.topic-group').classList.toggle('collapsed')">
+            <span class="topic-group-dot" style="background:${rule.color}"></span>
+            <span class="topic-group-emoji">${rule.emoji}</span>
+            <span class="topic-group-name">${rule.key}</span>
+            <span class="topic-group-count">${items.length}건</span>
+            <span class="topic-group-chevron">▼</span>
+          </div>
+          <div class="topic-group-cards">${cardsHTML}</div>
+        </div>`;
+    });
+    cardGrid.innerHTML = html;
+    attachCardClickListeners();
+  }
+
+  function attachCardClickListeners() {
     cardGrid.querySelectorAll(".card").forEach(card => {
       card.addEventListener("click", () => {
         const id = card.dataset.id;
@@ -376,7 +494,7 @@
   }
 
   // ── Card HTML Builder ─────────────────────
-  function buildCardHTML(item, idx) {
+  function buildCardHTML(item, idx, topicColor) {
     const delay = Math.min(idx * 40, 400);
     const typeBadge = {
       tc:      '<span class="badge badge-tc">TC</span>',
@@ -397,8 +515,12 @@
 
     const tags = item.tags.slice(0, 4).map(t => `<span class="tag">${t}</span>`).join("");
 
+    const topicBar = topicColor
+      ? `<div class="topic-bar" style="background:${topicColor}"></div>`
+      : "";
     return `
     <div class="card type-${item.type}" data-id="${item.id}" style="animation-delay:${delay}ms" role="button" tabindex="0" aria-label="${item.title}">
+      ${topicBar}
       <div class="card-top">
         <div class="card-badges">
           ${typeBadge} ${statusBadge} ${newBadge}

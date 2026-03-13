@@ -1034,3 +1034,105 @@ a:hover { text-decoration: underline; }
   border-radius: 3px;
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════
+   TOPIC FILTER & GROUPED VIEW
+   ═══════════════════════════════════════════ */
+
+/* ── Topic chips (colored per topic) ── */
+.topic-filter-group .filter-chip { font-size: 12px; }
+
+.topic-chip-기후환경  { --tc: #3fb950; }
+.topic-chip-에너지    { --tc: #f59e0b; }
+.topic-chip-교육      { --tc: #2f81f7; }
+.topic-chip-보건의료  { --tc: #ef4444; }
+.topic-chip-금융핀테크{ --tc: #eab308; }
+.topic-chip-농업식량  { --tc: #84cc16; }
+.topic-chip-사회보호  { --tc: #a855f7; }
+.topic-chip-거버넌스  { --tc: #94a3b8; }
+.topic-chip-인프라도시{ --tc: #06b6d4; }
+.topic-chip-디지털    { --tc: #6366f1; }
+
+.topic-filter-group .filter-chip.active {
+  background: color-mix(in srgb, var(--tc, var(--accent)) 15%, transparent);
+  border-color: var(--tc, var(--accent));
+  color: var(--tc, var(--text1));
+}
+.topic-filter-group .filter-chip:hover {
+  border-color: var(--tc, var(--accent));
+  color: var(--tc, var(--text1));
+}
+
+/* ── Group by topic button ── */
+#groupTopicBtn {
+  font-size: 11px;
+  padding: 4px 10px;
+  gap: 4px;
+  letter-spacing: 0;
+}
+#groupTopicBtn.active {
+  background: rgba(47,129,247,0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Topic group section header ── */
+.topic-group {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+.topic-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0 10px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.topic-group-header:hover .topic-group-name { opacity: .8; }
+
+.topic-group-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.topic-group-emoji { font-size: 16px; line-height: 1; }
+.topic-group-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text1);
+  transition: opacity .15s;
+}
+.topic-group-count {
+  font-size: 12px;
+  color: var(--text3);
+  margin-left: 2px;
+}
+.topic-group-chevron {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text3);
+  transition: transform .2s;
+}
+.topic-group.collapsed .topic-group-chevron { transform: rotate(-90deg); }
+
+.topic-group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.card-grid.list-view .topic-group-cards {
+  grid-template-columns: 1fr;
+}
+.topic-group.collapsed .topic-group-cards { display: none; }
+
+/* topic color bar on card when grouped */
+.topic-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 14px 14px 0 0;
+}
