@@ -27,6 +27,9 @@
   --loan-color:    #d29922;
   --loan-bg:       rgba(210,153,34,0.15);
 
+  --text1:   #e6edf3;   /* alias for --text, used in newer sections */
+  --surface: #161b22;   /* alias for --bg2, card/surface background */
+
   --radius:  8px;
   --radius2: 12px;
   --shadow:  0 4px 24px rgba(0,0,0,0.4);
